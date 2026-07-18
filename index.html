@@ -450,6 +450,144 @@
     height:100%;
     object-fit:cover;
     display:block;
+    opacity:0;
+    transform:scale(1.08);
+    transition: opacity 0.45s ease, transform 0.5s ease;
+  }
+
+  .photo .gift-box{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    pointer-events:none;
+  }
+
+  .photo .gift-base,
+  .photo .gift-lid{
+    position:absolute;
+    left:0;
+    right:0;
+    border-radius:14px;
+    background: linear-gradient(140deg, #ffbfd7 0%, #e9bbf2 58%, #d8c6ff 100%);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.45);
+    transition: transform 0.55s ease, opacity 0.4s ease;
+  }
+
+  .photo .gift-base{
+    top:18%;
+    bottom:0;
+  }
+
+  .photo .gift-lid{
+    top:0;
+    height:34%;
+    transform-origin:center top;
+    z-index:2;
+  }
+
+  .photo .gift-ribbon-v,
+  .photo .gift-ribbon-h{
+    position:absolute;
+    background: linear-gradient(180deg, #f6c669, #f1b23f);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.3);
+    transition: transform 0.45s ease, opacity 0.35s ease;
+    z-index:3;
+  }
+
+  .photo .gift-ribbon-v{
+    width:16%;
+    top:0;
+    bottom:0;
+    left:50%;
+    transform:translateX(-50%);
+  }
+
+  .photo .gift-ribbon-h{
+    height:14%;
+    left:0;
+    right:0;
+    top:26%;
+  }
+
+  .photo .gift-bow{
+    position:absolute;
+    top:5%;
+    left:50%;
+    width:44px;
+    height:20px;
+    transform:translateX(-50%);
+    z-index:4;
+  }
+
+  .photo .gift-bow::before,
+  .photo .gift-bow::after{
+    content:'';
+    position:absolute;
+    width:18px;
+    height:18px;
+    border:4px solid #f6c669;
+    border-radius:50% 50% 35% 50%;
+    top:0;
+    background:rgba(255,255,255,0.18);
+  }
+
+  .photo .gift-bow::before{
+    left:0;
+    transform:rotate(-16deg);
+  }
+
+  .photo .gift-bow::after{
+    right:0;
+    transform:scaleX(-1) rotate(-16deg);
+  }
+
+  .photo .gift-note{
+    position:absolute;
+    bottom:9px;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:0.74rem;
+    letter-spacing:1px;
+    color:#fff;
+    background:rgba(92,61,99,0.5);
+    padding:4px 8px;
+    border-radius:999px;
+    text-transform:uppercase;
+    z-index:4;
+    transition: opacity 0.3s ease, transform 0.35s ease;
+  }
+
+  .photo.opened img{
+    opacity:1;
+    transform:scale(1);
+  }
+
+  .photo.opened .gift-lid{
+    transform: translateY(-120%) rotate(-14deg);
+    opacity:0;
+  }
+
+  .photo.opened .gift-base{
+    transform: translateY(115%);
+    opacity:0;
+  }
+
+  .photo.opened .gift-ribbon-v{
+    transform: translateX(-50%) translateY(-26px);
+    opacity:0;
+  }
+
+  .photo.opened .gift-ribbon-h{
+    transform: translateY(-22px);
+    opacity:0;
+  }
+
+  .photo.opened .gift-note,
+  .photo.opened .gift-bow{
+    opacity:0;
+    transform:translateX(-50%) translateY(-12px);
   }
 
 
@@ -847,12 +985,61 @@
 
   const gallery = document.getElementById('gallery');
 
+  function revealGift(photoCard){
+    if(!photoCard.classList.contains('wrapped')) return false;
+    photoCard.classList.remove('wrapped');
+    photoCard.classList.add('opened');
+
+    const rect = photoCard.getBoundingClientRect();
+    const bursts = ['✨','💖','🌟'];
+    for(let i=0;i<8;i++){
+      const sparkle = document.createElement('div');
+      sparkle.className = 'pop-burst';
+      sparkle.textContent = bursts[Math.floor(Math.random() * bursts.length)];
+      const x = rect.left + rect.width/2 + (Math.random() * 90 - 45);
+      const y = rect.top + rect.height/2 + (Math.random() * 90 - 45);
+      sparkle.style.left = x + 'px';
+      sparkle.style.top = y + 'px';
+      document.body.appendChild(sparkle);
+      setTimeout(() => sparkle.remove(), 550);
+    }
+
+    return true;
+  }
+
   photos.forEach((src, i) => {
     const div = document.createElement('div');
-    div.className = 'photo';
+    div.className = 'photo wrapped';
+    div.tabIndex = 0;
+    div.setAttribute('role', 'button');
+    div.setAttribute('aria-label', `Open gift ${i+1}`);
     if(src){
-      div.innerHTML = `<img src="${src}" alt="photo ${i+1}">`;
-      div.addEventListener('click', () => openLightbox(src, i+1));
+      div.innerHTML = `
+        <img src="${src}" alt="photo ${i+1}">
+        <div class="gift-box" aria-hidden="true">
+          <div class="gift-base"></div>
+          <div class="gift-lid"></div>
+          <div class="gift-ribbon-v"></div>
+          <div class="gift-ribbon-h"></div>
+          <div class="gift-bow"></div>
+          <div class="gift-note">tap to open</div>
+        </div>
+      `;
+
+      const handleGiftClick = () => {
+        if(revealGift(div)){
+          return;
+        }
+        openLightbox(src, i+1);
+      };
+
+      div.addEventListener('click', handleGiftClick);
+      div.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' || e.key === ' '){
+          e.preventDefault();
+          handleGiftClick();
+        }
+      });
     }
     gallery.appendChild(div);
   });
